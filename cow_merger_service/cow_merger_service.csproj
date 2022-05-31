@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="cpr-checkpoints\**" />
+    <Compile Remove="index-checkpoints\**" />
+    <Content Remove="cpr-checkpoints\**" />
+    <Content Remove="index-checkpoints\**" />
+    <EmbeddedResource Remove="cpr-checkpoints\**" />
+    <EmbeddedResource Remove="index-checkpoints\**" />
+    <None Remove="cpr-checkpoints\**" />
+    <None Remove="index-checkpoints\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.FASTER.Core" Version="2.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+  </ItemGroup>
+
+</Project>

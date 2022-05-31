@@ -1,0 +1,7 @@
+.vs
+/cow_merger_service/cpr-checkpoints
+/cow_merger_service/index-checkpoints
+/cow_merger_service/bin
+/cow_merger_service/obj
+/cow_merger_service/cow_merger_service.csproj.user
+/cow_merger_service/Properties/PublishProfiles
