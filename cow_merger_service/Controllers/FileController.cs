@@ -12,11 +12,9 @@ namespace cow_merger_service.Controllers
     [Route("api/[controller]/[action]")]
     public class FileController : Controller
     {
-        private ILogger<FileController> _logger;
         private SessionManager _sessionManager;
         public FileController(SessionManager sessionManager, ILogger<FileController> logger)
         {
-            this._logger = logger;
             this._sessionManager = sessionManager;
         }
 

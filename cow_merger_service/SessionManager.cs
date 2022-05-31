@@ -15,23 +15,20 @@ namespace cow_merger_service
     public class SessionManager : IDisposable
     {
         private readonly ConcurrentDictionary<Guid, CowSession> _fileSessions = new();
-
-        private IConfiguration _configuration;
         private readonly string _workingDirectory;
         private readonly string _originalImageDirectory;
         private readonly string _destinationDirectory;
-        private ILogger<SessionManager> _logger;
+        private readonly ILogger<SessionManager> _logger;
         private bool _disposed = false;
-        public SessionManager(IConfiguration configuration, ILogger<SessionManager> logger) 
+        private readonly ILoggerFactory _loggerFactory;
+
+        public SessionManager(IConfiguration configuration, ILogger<SessionManager> logger, ILoggerFactory loggerFactory) 
         {
-            this._configuration = configuration;
-            this._logger = logger;
+            _logger = logger;
             _workingDirectory = configuration["Settings:WorkingDirectory"];
             _originalImageDirectory = configuration["Settings:OriginalImageDirectory"];
             _destinationDirectory = configuration["Settings:DestinationDirectory"];
-            _logger.Log(LogLevel.Information, $"workingDirectory: {_workingDirectory}");
-            _logger.Log(LogLevel.Information, $"originalImageDirectory: {_originalImageDirectory}");
-            _logger.Log(LogLevel.Information, $"destinationDirectory: {_destinationDirectory}");
+            _loggerFactory = loggerFactory;
         }
 
     
@@ -294,13 +291,20 @@ namespace cow_merger_service
             session.Merger = new
                 Merger.Merger(Path.Combine(_workingDirectory, session.Id.ToString()),
                     _destinationDirectory,
-                    session.BitfieldSize, session.ImageName, session.ImageVersion);
+                    session.BitfieldSize, session.ImageName, session.ImageVersion, _loggerFactory);
             session.State = SessionState.Merging;
 
             return Task.Factory.StartNew(() =>
             {
-                session.Merger.Merge(session.KvSession, session.FileSize);
-                session.State = SessionState.Done;
+                if (session.Merger.Merge(session.KvSession, session.FileSize))
+                {
+                    session.State = SessionState.Done;
+                }
+                else
+                {
+                    session.State = SessionState.Failed;
+                }
+
                 //TODO MAYBE DELETE?
                 session.Store.TakeFullCheckpointAsync(CheckpointType.FoldOver).GetAwaiter().GetResult();
                 session.KvSession.Dispose();

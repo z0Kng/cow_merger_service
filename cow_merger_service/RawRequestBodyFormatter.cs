@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Net.Http.Headers;
 
@@ -33,7 +34,7 @@ namespace cow_merger_service
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            var contentType = context.HttpContext.Request.ContentType;
+            string contentType = context.HttpContext.Request.ContentType;
             if (string.IsNullOrEmpty(contentType) || contentType == "text/plain" ||
                 contentType == "application/octet-stream")
                 return true;
@@ -49,15 +50,15 @@ namespace cow_merger_service
         /// <returns></returns>
         public override async Task<InputFormatterResult> ReadRequestBodyAsync(InputFormatterContext context)
         {
-            var request = context.HttpContext.Request;
-            var contentType = context.HttpContext.Request.ContentType;
+            HttpRequest request = context.HttpContext.Request;
+            string contentType = context.HttpContext.Request.ContentType;
 
 
             if (string.IsNullOrEmpty(contentType) || contentType == "text/plain")
             {
-                using (var reader = new StreamReader(request.Body))
+                using (StreamReader reader = new StreamReader(request.Body))
                 {
-                    var content = await reader.ReadToEndAsync();
+                    string content = await reader.ReadToEndAsync();
                     return await InputFormatterResult.SuccessAsync(content);
                 }
             }

@@ -6,33 +6,42 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 
 namespace cow_merger_service
 {
     public class Startup
     {
-        IHostApplicationLifetime LifeTime;
+        private ILogger _logger;
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
-        private bool checkConfiguration()
+        private bool CheckConfiguration()
         {
             bool isOk = true;
-            var d = Directory.CreateDirectory("test");
+            DirectoryInfo d = Directory.CreateDirectory("test");
             Console.WriteLine(d.FullName);
             if (!Directory.Exists(Configuration["Settings:WorkingDirectory"]))
             {
-                
+                _logger.Log(LogLevel.Critical, "WorkingDirectory does not exists, bye!");
                 isOk = false;
             }
             if (!Directory.Exists(Configuration["Settings:OriginalImageDirectory"]))
             {
+                _logger.Log(LogLevel.Critical, "OriginalImageDirectory does not exists, bye!");
                 isOk = false;
             }
-
+            if (!Directory.Exists(Configuration["Settings:DestinationDirectory"]))
+            {
+                _logger.Log(LogLevel.Critical, "DestinationDirectory does not exists, bye!");
+                isOk = false;
+            }
+            _logger.Log(LogLevel.Information, $"workingDirectory: {Configuration["Settings:WorkingDirectory"]}");
+            _logger.Log(LogLevel.Information, $"originalImageDirectory: {Configuration["Settings:OriginalImageDirectory"]}");
+            _logger.Log(LogLevel.Information, $"destinationDirectory: {Configuration["Settings:DestinationDirectory"]}");
             return isOk;
 
         }
@@ -56,8 +65,9 @@ namespace cow_merger_service
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime, ILogger<Startup> logger)
         {
+            _logger = logger;
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -77,7 +87,7 @@ namespace cow_merger_service
                 endpoints.MapControllers();
             });
 
-            if (!checkConfiguration())
+            if (!CheckConfiguration())
             {
                 lifeTime.StopApplication();
             }

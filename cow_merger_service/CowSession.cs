@@ -15,7 +15,8 @@ namespace cow_merger_service
         Copying,
         Active,
         Merging,
-        Done
+        Done,
+        Failed
     }
 
     public class CowSession

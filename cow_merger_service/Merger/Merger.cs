@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FASTER.core;
+using Microsoft.Extensions.Logging;
 
 
 namespace cow_merger_service.Merger
@@ -13,28 +15,28 @@ namespace cow_merger_service.Merger
         private readonly long _bitFieldSize;
         private readonly string _originalImageName;
         private int _version;
-        public long CurrentBlock;
-        public long LastBlock;
+        private readonly ILogger<Merger> _logger;
 
-   
-        public Merger(string source, string destination, int bitFieldSize, string originalImageName, int version)
+
+        public Merger(string source, string destination, int bitFieldSize, string originalImageName, int version, ILoggerFactory loggerFactory)
         {
             _sourceDirectory = source;
             _destination = destination;
             _bitFieldSize = bitFieldSize;
             _originalImageName = originalImageName;
             _version = version;
+            _logger = loggerFactory.CreateLogger<Merger>();
         }
 
         private bool checkBit(Span<byte> bitfield, int n)
         {
             return (((bitfield[n / 8])  >> (n % 8))  & 1 )> 0;
         }
-        private string PrintB(bool[] a)
+        private string PrintB(IReadOnlyList<bool> a)
         {
-            char[] buf = new char[a.Length];
+            char[] buf = new char[a.Count];
 
-            for (int i = 0; i < a.Length; i++)
+            for (int i = 0; i < a.Count; i++)
             {
                 if (a[i])
                 {
@@ -58,7 +60,7 @@ namespace cow_merger_service.Merger
  
 
     
-        public void Merge(ClientSession<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty, IFunctions<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty>> session, long newSize)
+        public bool Merge(ClientSession<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty, IFunctions<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty>> session, long newSize)
         {
 
 
@@ -86,15 +88,16 @@ namespace cow_merger_service.Merger
                           
                             if (checkBit(metaData.Bitfield, i))
                             {
-
                                 long diffOffset = metaData.Offset + i * 4096;
                                 long fileOffset = metaData.Number * 4096 * _bitFieldSize + i * 4096;
                                 diffStream.Seek(diffOffset, SeekOrigin.Begin);
                                 fileStream.Seek(fileOffset, SeekOrigin.Begin);
-                                diffStream.Read(buffer);
+                                if (diffStream.Read(buffer) != 4096)
+                                {
+                                    _logger.Log(LogLevel.Error,"Reading less bytes than expected from data file. Cancel merge.");
+                                    return false;
+                                }
                                 fileStream.Write(buffer);
-                                
-
                             }
                         }
                     }
@@ -113,7 +116,7 @@ namespace cow_merger_service.Merger
             
             File.Move(sourceImage, Path.Combine(_destination, _originalImageName + ".r" + _version));
             File.Delete(dataFile);
-            
+            return true;
         }
 
 
