@@ -71,21 +71,9 @@ namespace cow_merger_service
             return session.Id;
         }
 
-        public bool Update(Guid guid, int blockNumber,  Span<byte> spanData)
+
+        private bool UpdateBlock(CowSession session, int blockNumber, Span<byte> bitfield, Span<byte> spanData)
         {
-            if (!_fileSessions.TryGetValue(guid, out CowSession session))
-            {
-                session = LoadSessionFromFileSystem(guid);
-                if (session == null)
-                {
-                    throw new KeyNotFoundException();
-                }
-            }
-
-
-            lock (session.ObjLock)
-            {
-
                 MyKey key = new()
                 {
                     Key = blockNumber
@@ -99,7 +87,7 @@ namespace cow_merger_service
                     session.TotalBlocks++;
                 }
 
-                metadata.Bitfield = spanData.Slice(0, session.BitfieldSize / 8).ToArray();
+                metadata.Bitfield = bitfield.ToArray();//spanData.Slice(0, session.BitfieldSize / 8).ToArray();
 
                 Status res = session.KvSession.Upsert(key, metadata);
 
@@ -115,12 +103,32 @@ namespace cow_merger_service
                 }
 
                 session.DataFileStream.Seek(metadata.Offset, SeekOrigin.Begin);
-                session.DataFileStream.Write(spanData.Slice(session.BitfieldSize / 8));
+                session.DataFileStream.Write(spanData); //.Slice(session.BitfieldSize / 8));
                 session.LastUpDateTime = DateTime.Now;
-            }
+            
 
             return true;
 
+        }
+
+        public bool Update(Guid guid, int blockNumber,  Span<byte> spanData)
+        {
+            if (!_fileSessions.TryGetValue(guid, out CowSession session))
+            {
+                session = LoadSessionFromFileSystem(guid);
+                if (session == null)
+                {
+                    throw new KeyNotFoundException();
+                }
+            }
+
+            lock (session.ObjLock)
+            {
+                Span<byte> bitfield = spanData.Slice(0, session.BitfieldSize);
+                Span<byte> data = spanData.Slice(session.BitfieldSize);
+
+                return UpdateBlock(session, blockNumber, bitfield, data);
+            }
         }
 
         public string StartMerge(Guid guid, long fileSize)

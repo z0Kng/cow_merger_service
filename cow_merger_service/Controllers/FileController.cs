@@ -37,11 +37,13 @@ namespace cow_merger_service.Controllers
 
         [HttpPost]
         [Consumes("application/octet-stream")]
-        public ActionResult Update(Guid guid, int blockNumber, [FromBody] byte[] data)
+        public ActionResult Update([FromQuery] Guid guid, [FromQuery] int blockNumber, [FromBody] byte[] data)
         {
 
+         
             try
             {
+   
                 if (_sessionManager.Update(guid, blockNumber, data.AsSpan()))
                 {
                     return Ok();

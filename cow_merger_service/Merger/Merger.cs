@@ -62,11 +62,6 @@ namespace cow_merger_service.Merger
     
         public bool Merge(ClientSession<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty, IFunctions<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty>> session, long newSize)
         {
-
-
-
-
-
             string sourceImage = Path.Combine(_sourceDirectory, "img");
             string dataFile = Path.Combine(_sourceDirectory, "data");
 
@@ -82,14 +77,14 @@ namespace cow_merger_service.Merger
                     {
                         BlockMetadata metaData = iterator.GetValue();
                         Console.WriteLine($"mergingBlock {metaData.Number}");
-                        for (int i = 0; i < metaData.Bitfield.Length*8; i++) 
+                        for (int i = 0; i < metaData.Bitfield.Length * 8; i++) 
                         {
                             // TODO also check if more optimized seeking in diff is possible
                           
                             if (checkBit(metaData.Bitfield, i))
                             {
                                 long diffOffset = metaData.Offset + i * 4096;
-                                long fileOffset = metaData.Number * 4096 * _bitFieldSize + i * 4096;
+                                long fileOffset = metaData.Number * 4096 * _bitFieldSize * 8 + i * 4096;
                                 diffStream.Seek(diffOffset, SeekOrigin.Begin);
                                 fileStream.Seek(fileOffset, SeekOrigin.Begin);
                                 if (diffStream.Read(buffer) != 4096)
