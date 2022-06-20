@@ -24,6 +24,9 @@ namespace cow_merger_service
             bool isOk = true;
             DirectoryInfo d = Directory.CreateDirectory("test");
             Console.WriteLine(d.FullName);
+            _logger.Log(LogLevel.Information, $"workingDirectory: {Path.GetFullPath(Configuration["Settings:WorkingDirectory"])}");
+            _logger.Log(LogLevel.Information, $"originalImageDirectory: {Path.GetFullPath(Configuration["Settings:OriginalImageDirectory"])}");
+            _logger.Log(LogLevel.Information, $"destinationDirectory: {Path.GetFullPath(Configuration["Settings:DestinationDirectory"])}");
             if (!Directory.Exists(Configuration["Settings:WorkingDirectory"]))
             {
                 _logger.Log(LogLevel.Critical, "WorkingDirectory does not exists, bye!");
@@ -39,9 +42,6 @@ namespace cow_merger_service
                 _logger.Log(LogLevel.Critical, "DestinationDirectory does not exists, bye!");
                 isOk = false;
             }
-            _logger.Log(LogLevel.Information, $"workingDirectory: {Configuration["Settings:WorkingDirectory"]}");
-            _logger.Log(LogLevel.Information, $"originalImageDirectory: {Configuration["Settings:OriginalImageDirectory"]}");
-            _logger.Log(LogLevel.Information, $"destinationDirectory: {Configuration["Settings:DestinationDirectory"]}");
             return isOk;
 
         }
@@ -55,7 +55,7 @@ namespace cow_merger_service
                services.AddControllers(options =>
             {
                 options.InputFormatters.Insert(0, new RawRequestBodyFormatter());
-            });
+            }).AddJsonOptions(options => { options.JsonSerializerOptions.IncludeFields = true; }); ;
             
            
             services.AddSwaggerGen(c =>

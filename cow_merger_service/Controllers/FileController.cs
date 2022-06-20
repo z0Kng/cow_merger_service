@@ -76,7 +76,14 @@ namespace cow_merger_service.Controllers
             }
         }
 
-       [HttpGet]
+        [HttpGet]
+        [Produces("application/json")]
+        public ActionResult<List<BlockStatistics>> GetTopModifiedBlocks(Guid guid, int amount)
+        {
+            return Ok(_sessionManager.GetTopModifiedBlocks(guid, amount));
+        }
+
+        [HttpGet]
         public ActionResult<SessionStatus> Status(Guid guid)
         {
             try

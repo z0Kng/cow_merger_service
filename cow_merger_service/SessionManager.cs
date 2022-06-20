@@ -85,10 +85,11 @@ namespace cow_merger_service
                     metadata.Number = blockNumber;
                     metadata.Offset = session.DataFileStream.Length;
                     session.TotalBlocks++;
+                    metadata.ModifyCount = 0;
                 }
 
-                metadata.Bitfield = bitfield.ToArray();//spanData.Slice(0, session.BitfieldSize / 8).ToArray();
-
+                metadata.Bitfield = bitfield.ToArray();
+                metadata.ModifyCount++;
                 Status res = session.KvSession.Upsert(key, metadata);
 
                 if (res.IsPending)
@@ -285,6 +286,40 @@ namespace cow_merger_service
             }
 
 
+        }
+
+
+
+        public List<BlockStatistics> GetTopModifiedBlocks(Guid guid, int amount)
+        {
+            if (!_fileSessions.TryGetValue(guid, out CowSession session))
+            {
+                session = LoadSessionFromFileSystem(guid);
+                if (session == null)
+                {
+                    throw new KeyNotFoundException();
+                }
+            }
+
+            if (session.State == SessionState.Done)
+            {
+                return null;
+            }
+
+            IFasterScanIterator<MyKey, BlockMetadata> iterator = session.KvSession.Iterate();
+            List<BlockStatistics> blockStatisticsList = new();
+            while (iterator.GetNext(out _))
+            {
+                BlockMetadata b = iterator.GetValue();
+                BlockStatistics blockStatistics = new BlockStatistics
+                {
+                    BlockNumber = b.Number,
+                    Modifications = b.ModifyCount
+                };
+                blockStatisticsList.Add(blockStatistics);
+            }
+            blockStatisticsList.Sort((x, y) => y.Modifications.CompareTo(x.Modifications));
+            return blockStatisticsList.GetRange(0,amount<blockStatisticsList.Count? amount : blockStatisticsList.Count);
         }
 
         public static string ByteArrayToString(byte[] a)

@@ -38,10 +38,10 @@ namespace cow_merger_service.Merger
     {
         public int Number;
         public long Offset; //offset in the diff file
+        public uint ModifyCount;
         public byte[] Bitfield;
     }
 
-    
     public class ValueSerializer : BinaryObjectSerializer<BlockMetadata>
     {
         public override void Serialize(ref BlockMetadata value)
