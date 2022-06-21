@@ -21,7 +21,8 @@
 
 #### Ubuntu
 
-1. If not already happened to have the dotnet sdk installed:
+1. If you have the dotnet sdk already install go to step 2.
+   
     First add the Microsoft package signing key to your list of trusted keys and add the package repository.
 
     For ubuntu 22.04:
@@ -49,7 +50,7 @@
     ```
     dotnet build cow_merger_service.csproj --runtime linux-x64
     ```
-    This will build the server ind `/bin/Debug` as debug build.
+    This will build the server in `/bin/Debug` as debug build.
     For further information see https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-build.
 
 ### Configuration
