@@ -2,7 +2,6 @@
 
 namespace cow_merger_service.Merger
 {
-
     public class MyKey : IFasterEqualityComparer<MyKey>
     {
         public int Key;
@@ -34,7 +33,7 @@ namespace cow_merger_service.Merger
         }
     }
 
-    public struct  BlockMetadata
+    public struct BlockMetadata
     {
         public int Number;
         public long Offset; //offset in the diff file
@@ -57,14 +56,13 @@ namespace cow_merger_service.Merger
             {
                 Number = reader.ReadInt32(),
                 Offset = reader.ReadInt64(),
-                Bitfield = reader.ReadBytes((int)(reader.BaseStream.Length-reader.BaseStream.Position))
+                Bitfield = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position))
             };
         }
     }
 
 
-
-    public class MyContext { }
-
-
+    public class MyContext
+    {
+    }
 }

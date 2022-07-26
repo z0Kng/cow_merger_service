@@ -14,15 +14,16 @@ namespace cow_merger_service
 {
     public class SessionManager : IDisposable
     {
-        private readonly ConcurrentDictionary<Guid, CowSession> _fileSessions = new();
-        private readonly string _workingDirectory;
-        private readonly string _originalImageDirectory;
         private readonly string _destinationDirectory;
+        private readonly ConcurrentDictionary<Guid, CowSession> _fileSessions = new();
         private readonly ILogger<SessionManager> _logger;
-        private bool _disposed = false;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly string _originalImageDirectory;
+        private readonly string _workingDirectory;
+        private bool _disposed;
 
-        public SessionManager(IConfiguration configuration, ILogger<SessionManager> logger, ILoggerFactory loggerFactory) 
+        public SessionManager(IConfiguration configuration, ILogger<SessionManager> logger,
+            ILoggerFactory loggerFactory)
         {
             _logger = logger;
             _workingDirectory = configuration["Settings:WorkingDirectory"];
@@ -31,10 +32,14 @@ namespace cow_merger_service
             _loggerFactory = loggerFactory;
         }
 
-    
-    
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-        public Guid Create(string imageName,int version, int bitfieldSize)
+
+        public Guid Create(string imageName, int version, int bitfieldSize)
         {
             CowSession session = new()
             {
@@ -49,24 +54,18 @@ namespace cow_merger_service
 
             Directory.CreateDirectory(path);
 
-            string originalImagePath = Path.Combine(_originalImageDirectory, session.ImageName + ".r" + session.ImageVersion);
-            if (!File.Exists(originalImagePath))
-            {
-                throw new ImageNotFound();
-            }
+            string originalImagePath =
+                Path.Combine(_originalImageDirectory, session.ImageName + ".r" + session.ImageVersion);
+            if (!File.Exists(originalImagePath)) throw new ImageNotFound();
 
             session.FileCopyTask = CopyImage(session);
 
 
-
             CreateKvStore(session);
 
-            session.DataFileStream = File.Create(Path.Combine(path, Path.GetFileName(Path.Combine(_workingDirectory, "data"))));
-            if (!_fileSessions.TryAdd(session.Id, session))
-            {
-                throw new InvalidOperationException();
-
-            }
+            session.DataFileStream =
+                File.Create(Path.Combine(path, Path.GetFileName(Path.Combine(_workingDirectory, "data"))));
+            if (!_fileSessions.TryAdd(session.Id, session)) throw new InvalidOperationException();
 
             return session.Id;
         }
@@ -74,53 +73,46 @@ namespace cow_merger_service
 
         private bool UpdateBlock(CowSession session, int blockNumber, Span<byte> bitfield, Span<byte> spanData)
         {
-                MyKey key = new()
-                {
-                    Key = blockNumber
-                };
-                Status result = session.KvSession.Read(key, out BlockMetadata metadata);
+            MyKey key = new()
+            {
+                Key = blockNumber
+            };
+            Status result = session.KvSession.Read(key, out BlockMetadata metadata);
 
-                if (result.NotFound)
-                {
-                    metadata.Number = blockNumber;
-                    metadata.Offset = session.DataFileStream.Length;
-                    session.TotalBlocks++;
-                    metadata.ModifyCount = 0;
-                }
+            if (result.NotFound)
+            {
+                metadata.Number = blockNumber;
+                metadata.Offset = session.DataFileStream.Length;
+                session.TotalBlocks++;
+                metadata.ModifyCount = 0;
+            }
 
-                metadata.Bitfield = bitfield.ToArray();
-                metadata.ModifyCount++;
-                Status res = session.KvSession.Upsert(key, metadata);
+            metadata.Bitfield = bitfield.ToArray();
+            metadata.ModifyCount++;
+            Status res = session.KvSession.Upsert(key, metadata);
 
-                if (res.IsPending)
-                {
-                    session.KvSession.CompletePending(true);
-                }
+            if (res.IsPending) session.KvSession.CompletePending(true);
 
-                if (!res.IsCompletedSuccessfully)
-                {
-                    Console.WriteLine("ERROR");
-                    return false;
-                }
+            if (!res.IsCompletedSuccessfully)
+            {
+                Console.WriteLine("ERROR");
+                return false;
+            }
 
-                session.DataFileStream.Seek(metadata.Offset, SeekOrigin.Begin);
-                session.DataFileStream.Write(spanData); //.Slice(session.BitfieldSize / 8));
-                session.LastUpDateTime = DateTime.Now;
-            
+            session.DataFileStream.Seek(metadata.Offset, SeekOrigin.Begin);
+            session.DataFileStream.Write(spanData);
+            session.LastUpDateTime = DateTime.Now;
+
 
             return true;
-
         }
 
-        public bool Update(Guid guid, int blockNumber,  Span<byte> spanData)
+        public bool Update(Guid guid, int blockNumber, Span<byte> spanData)
         {
             if (!_fileSessions.TryGetValue(guid, out CowSession session))
             {
                 session = LoadSessionFromFileSystem(guid);
-                if (session == null)
-                {
-                    throw new KeyNotFoundException();
-                }
+                if (session == null) throw new KeyNotFoundException();
             }
 
             lock (session.ObjLock)
@@ -132,18 +124,16 @@ namespace cow_merger_service
             }
         }
 
-        public string StartMerge(Guid guid, long fileSize)
+        public string StartMerge(Guid guid, long originalFileSize, long newFileSize)
         {
-            if (!_fileSessions.TryGetValue(guid, out CowSession session))
-            {
-                throw new KeyNotFoundException();
-            }
+            if (!_fileSessions.TryGetValue(guid, out CowSession session)) throw new KeyNotFoundException();
 
-            session.FileSize = fileSize;
+            session.NewFileSize = newFileSize;
             session.LastUpDateTime = DateTime.Now;
+            session.OriginalFileSize = originalFileSize;
             lock (session.ObjLock)
             {
-                if (session.FileCopyTask!=null && session.FileCopyTask.Status == TaskStatus.Running)
+                if (session.FileCopyTask != null && session.FileCopyTask.Status == TaskStatus.Running)
                 {
                     session.StartMerge = true;
                     return "Merge scheduled";
@@ -155,22 +145,19 @@ namespace cow_merger_service
                 Merge(session);
                 return "Merge started";
             }
+
             throw new InvalidOperationException();
         }
 
         public SessionStatus Status(Guid guid)
         {
-
             if (!_fileSessions.TryGetValue(guid, out CowSession session))
             {
                 session = LoadSessionFromFileSystem(guid);
-                if (session == null)
-                {
-                    throw new KeyNotFoundException();
-                }
+                if (session == null) throw new KeyNotFoundException();
             }
-            
-            return new SessionStatus()
+
+            return new SessionStatus
             {
                 ImageName = session.ImageName,
                 OriginalImageVersion = session.ImageVersion,
@@ -182,18 +169,16 @@ namespace cow_merger_service
 
         private void CreateKvStore(CowSession session, bool recover = false)
         {
-
             string kvPath = Path.Combine(_workingDirectory, session.Id.ToString(), "meta/");
             session.Log = Devices.CreateLogDevice(kvPath + "hlog.log");
 
             session.Objlog = Devices.CreateLogDevice(kvPath + "hlog.obj.log");
 
-            var serializerSettings =
+            SerializerSettings<MyKey, BlockMetadata> serializerSettings =
                 new SerializerSettings<MyKey, BlockMetadata>
                 {
                     keySerializer = () => new KeySerializer(),
                     valueSerializer = () => new ValueSerializer()
-
                 };
 
             session.Store = new FasterKV<MyKey, BlockMetadata>(
@@ -208,8 +193,8 @@ namespace cow_merger_service
 
         private async Task CopyImage(CowSession session)
         {
-
-            string originalImagePath = Path.Combine(_originalImageDirectory, session.ImageName + ".r" + session.ImageVersion);
+            string originalImagePath =
+                Path.Combine(_originalImageDirectory, session.ImageName + ".r" + session.ImageVersion);
             string path = Path.Combine(_workingDirectory, session.Id.ToString());
             await using (FileStream sourceStream = File.Open(originalImagePath, FileMode.Open))
             {
@@ -237,25 +222,22 @@ namespace cow_merger_service
 
             if (merge)
             {
-                #pragma warning disable CS4014
+#pragma warning disable CS4014
                 Merge(session);
-                #pragma warning restore CS4014
+#pragma warning restore CS4014
             }
-
         }
+
         private CowSession LoadSessionFromFileSystem(Guid guid)
         {
             string path = Path.Combine(_workingDirectory, guid.ToString());
-            if (!Directory.Exists(path))
-            {
-                return null;
-            }
+            if (!Directory.Exists(path)) return null;
 
-            CowSession session = JsonToFile.ReadFromJsonFile<CowSession>(Path.Combine(path,  "session.json"));
+            CowSession session = JsonToFile.ReadFromJsonFile<CowSession>(Path.Combine(path, "session.json"));
 
 
-
-            session.DataFileStream = File.OpenWrite(Path.Combine(path, Path.GetFileName(Path.Combine(_workingDirectory, "data"))));
+            session.DataFileStream =
+                File.OpenWrite(Path.Combine(path, Path.GetFileName(Path.Combine(_workingDirectory, "data"))));
 
 
             if (session.State != SessionState.Done)
@@ -266,28 +248,23 @@ namespace cow_merger_service
             }
 
             return session;
-
         }
+
         private void SaveSessionToFile(CowSession session)
         {
             lock (session.ObjLock)
             {
-                if (!_fileSessions.TryRemove(session.Id, out _))
-                {
-                    return;
-                }
+                if (!_fileSessions.TryRemove(session.Id, out _)) return;
+
                 string path = Path.Combine(_workingDirectory, session.Id.ToString());
                 session.Store.TakeFullCheckpointAsync(CheckpointType.FoldOver).GetAwaiter().GetResult();
                 session.KvSession.Dispose();
                 session.Store.Dispose();
                 session.Log.Dispose();
                 session.Objlog.Dispose();
-                JsonToFile.WriteToJsonFile(Path.Combine(path , "session.json"), session);
+                JsonToFile.WriteToJsonFile(Path.Combine(path, "session.json"), session);
             }
-
-
         }
-
 
 
         public List<BlockStatistics> GetTopModifiedBlocks(Guid guid, int amount)
@@ -295,36 +272,31 @@ namespace cow_merger_service
             if (!_fileSessions.TryGetValue(guid, out CowSession session))
             {
                 session = LoadSessionFromFileSystem(guid);
-                if (session == null)
-                {
-                    throw new KeyNotFoundException();
-                }
+                if (session == null) throw new KeyNotFoundException();
             }
 
-            if (session.State == SessionState.Done)
-            {
-                return null;
-            }
+            if (session.State == SessionState.Done) return null;
 
             IFasterScanIterator<MyKey, BlockMetadata> iterator = session.KvSession.Iterate();
             List<BlockStatistics> blockStatisticsList = new();
             while (iterator.GetNext(out _))
             {
                 BlockMetadata b = iterator.GetValue();
-                BlockStatistics blockStatistics = new BlockStatistics
+                BlockStatistics blockStatistics = new()
                 {
                     BlockNumber = b.Number,
                     Modifications = b.ModifyCount
                 };
                 blockStatisticsList.Add(blockStatistics);
             }
+
             blockStatisticsList.Sort((x, y) => y.Modifications.CompareTo(x.Modifications));
-            return blockStatisticsList.GetRange(0,amount<blockStatisticsList.Count? amount : blockStatisticsList.Count);
+            return blockStatisticsList.GetRange(0,
+                amount < blockStatisticsList.Count ? amount : blockStatisticsList.Count);
         }
 
         public static string ByteArrayToString(byte[] a)
         {
-
             return string.Join(" ", a.Select(x => Convert.ToString(x, 2).PadLeft(8, '0')));
         }
 
@@ -339,14 +311,10 @@ namespace cow_merger_service
 
             return Task.Factory.StartNew(() =>
             {
-                if (session.Merger.Merge(session.KvSession, session.FileSize))
-                {
+                if (session.Merger.Merge(session.KvSession, session.OriginalFileSize, session.NewFileSize))
                     session.State = SessionState.Done;
-                }
                 else
-                {
                     session.State = SessionState.Failed;
-                }
 
                 //TODO MAYBE DELETE?
                 session.Store.TakeFullCheckpointAsync(CheckpointType.FoldOver).GetAwaiter().GetResult();
@@ -354,33 +322,27 @@ namespace cow_merger_service
                 session.Store.Dispose();
                 session.Log.Dispose();
                 session.Objlog.Dispose();
-                _logger.Log(LogLevel.Information, $"Image:{session.ImageName}.{session.ImageVersion} {Environment.NewLine}" +
-                                                  $"Guid:{session.Id} {Environment.NewLine}" +
-                                                  "Successful Merged");
+                _logger.Log(LogLevel.Information,
+                    $"Image:{session.ImageName}.{session.ImageVersion} {Environment.NewLine}" +
+                    $"Guid:{session.Id} {Environment.NewLine}" +
+                    "Successful Merged");
                 SaveSessionToFile(session);
             });
         }
 
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
             {
                 if (disposing)
-                {
                     foreach (KeyValuePair<Guid, CowSession> session in _fileSessions)
-                    {
                         SaveSessionToFile(session.Value);
-                    }
-                }
+
                 _disposed = true;
             }
         }
     }
+
     public class ImageNotFound : Exception
     {
         public ImageNotFound()

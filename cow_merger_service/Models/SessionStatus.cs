@@ -1,14 +1,19 @@
-﻿namespace cow_merger_service.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace cow_merger_service.Models
 {
     public class SessionStatus
     {
-        
-        public SessionState State { get; set; }
-        public string ImageName { get; set; }
-        public int OriginalImageVersion { get; set; } = -1;
-        public int NewImageVersion { get; set; } = -1;
-        public int MergedBlocks { get; set; }
-        public int TotalBlocks { get; set; }
-       
+        [Required] public string ImageName { get; set; }
+
+        [Required] public int MergedBlocks { get; set; }
+
+        [Required] public int NewImageVersion { get; set; } = -1;
+
+        [Required] public int OriginalImageVersion { get; set; } = -1;
+
+        [Required] public SessionState State { get; set; }
+
+        [Required] public int TotalBlocks { get; set; }
     }
 }

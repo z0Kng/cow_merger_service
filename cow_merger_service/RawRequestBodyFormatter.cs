@@ -8,12 +8,11 @@ using Microsoft.Net.Http.Headers;
 namespace cow_merger_service
 {
     /// <summary>
-    /// Formatter that allows content of type text/plain and application/octet stream
-    /// or no content type to be parsed to raw data. Allows for a single input parameter
-    /// in the form of:
-    /// 
-    /// public string RawString([FromBody] string data)
-    /// public byte[] RawData([FromBody] byte[] data)
+    ///     Formatter that allows content of type text/plain and application/octet stream
+    ///     or no content type to be parsed to raw data. Allows for a single input parameter
+    ///     in the form of:
+    ///     public string RawString([FromBody] string data)
+    ///     public byte[] RawData([FromBody] byte[] data)
     /// </summary>
     public class RawRequestBodyFormatter : InputFormatter
     {
@@ -25,12 +24,12 @@ namespace cow_merger_service
 
 
         /// <summary>
-        /// Allow text/plain, application/octet-stream and no content type to
-        /// be processed
+        ///     Allow text/plain, application/octet-stream and no content type to
+        ///     be processed
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public override Boolean CanRead(InputFormatterContext context)
+        public override bool CanRead(InputFormatterContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
@@ -43,8 +42,8 @@ namespace cow_merger_service
         }
 
         /// <summary>
-        /// Handle text/plain or no content type for string results
-        /// Handle application/octet-stream for byte[] results
+        ///     Handle text/plain or no content type for string results
+        ///     Handle application/octet-stream for byte[] results
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
@@ -55,22 +54,19 @@ namespace cow_merger_service
 
 
             if (string.IsNullOrEmpty(contentType) || contentType == "text/plain")
-            {
-                using (StreamReader reader = new StreamReader(request.Body))
+                using (StreamReader reader = new(request.Body))
                 {
                     string content = await reader.ReadToEndAsync();
                     return await InputFormatterResult.SuccessAsync(content);
                 }
-            }
+
             if (contentType == "application/octet-stream")
-            {
-                using (var ms = new MemoryStream(2048))
+                using (MemoryStream ms = new MemoryStream(2048))
                 {
                     await request.Body.CopyToAsync(ms);
-                    var content = ms.ToArray();
+                    byte[] content = ms.ToArray();
                     return await InputFormatterResult.SuccessAsync(content);
                 }
-            }
 
             return await InputFormatterResult.FailureAsync();
         }

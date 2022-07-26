@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.FASTER.Core" Version="2.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />

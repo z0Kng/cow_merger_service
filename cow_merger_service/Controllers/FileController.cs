@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using cow_merger_service.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ namespace cow_merger_service.Controllers
         }
 
         [HttpPost]
-        public ActionResult<Guid> Create([FromForm] int version, [FromForm] int bitfieldSize, [FromForm] string imageName)
+        public ActionResult<Guid> Create([Required, FromForm] int version, [Required, FromForm] int bitfieldSize, [Required, FromForm] string imageName)
         {
             try
             {
@@ -37,13 +38,10 @@ namespace cow_merger_service.Controllers
 
         [HttpPost]
         [Consumes("application/octet-stream")]
-        public ActionResult Update([FromQuery] Guid guid, [FromQuery] int blockNumber, [FromBody] byte[] data)
+        public ActionResult Update([Required, FromQuery] Guid guid, [Required, FromQuery] int blockNumber, [Required, FromBody] byte[] data)
         {
-
-         
             try
             {
-   
                 if (_sessionManager.Update(guid, blockNumber, data.AsSpan()))
                 {
                     return Ok();
@@ -60,11 +58,11 @@ namespace cow_merger_service.Controllers
         }
 
         [HttpPost]
-        public ActionResult StartMerge([FromForm] Guid guid, [FromForm] long fileSize)
+        public ActionResult StartMerge([Required, FromForm] Guid guid, [Required, FromForm] long originalFileSize,  [Required, FromForm] long newFileSize)
         {
             try
             {
-                return Ok(_sessionManager.StartMerge(guid, fileSize));
+                return Ok(_sessionManager.StartMerge(guid, originalFileSize, newFileSize));
             }
             catch (KeyNotFoundException)
             {
@@ -78,13 +76,19 @@ namespace cow_merger_service.Controllers
 
         [HttpGet]
         [Produces("application/json")]
-        public ActionResult<List<BlockStatistics>> GetTopModifiedBlocks(Guid guid, int amount)
+        public ActionResult<List<BlockStatistics>> GetTopModifiedBlocks([Required] Guid guid, [Required] int amount)
         {
-            return Ok(_sessionManager.GetTopModifiedBlocks(guid, amount));
+            try {
+                return Ok(_sessionManager.GetTopModifiedBlocks(guid, amount));
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Session not found");
+            }
         }
 
         [HttpGet]
-        public ActionResult<SessionStatus> Status(Guid guid)
+        public ActionResult<SessionStatus> Status([Required] Guid guid)
         {
             try
             {

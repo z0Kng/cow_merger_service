@@ -6,7 +6,6 @@ using cow_merger_service.Merger;
 using FASTER.core;
 using Newtonsoft.Json;
 
-
 namespace cow_merger_service
 {
     [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]
@@ -21,57 +20,50 @@ namespace cow_merger_service
 
     public class CowSession
     {
+        [Newtonsoft.Json.JsonIgnore] public Merger.Merger Merger;
+
+        public int BitfieldSize { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore] public FileStream DataFileStream { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore] public Task FileCopyTask { get; set; }
+
+        public long NewFileSize { get; set; }
         public Guid Id { get; set; }
-
-        public SessionState State { get; set; }
-        
-        public long FileSize { get; set; }
-        public bool StartMerge { get; set; } =  false;
-
-
-        
-        public int ProtocolVersion { get; set; } = 1;
         public string ImageName { get; set; }
         public int ImageVersion { get; set; }
-        public int BitfieldSize { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore]
+        public ClientSession<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty,
+            IFunctions<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty>> KvSession { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore] public DateTime LastUpDateTime { get; set; } = DateTime.Now;
+
+        [Newtonsoft.Json.JsonIgnore] public IDevice Log { get; set; }
+
         public int MergedBlocks { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore] public object ObjLock { get; set; } = new();
+
+        [Newtonsoft.Json.JsonIgnore] public IDevice Objlog { get; set; }
+
+        public long OriginalFileSize { get; set; }
+
+
+        public int ProtocolVersion { get; set; } = 1;
+        public bool StartMerge { get; set; } = false;
+
+        public SessionState State { get; set; }
+
+        [Newtonsoft.Json.JsonIgnore] public FasterKV<MyKey, BlockMetadata> Store { get; set; }
+
         public int TotalBlocks { get; set; }
 
-        [Newtonsoft.Json.JsonIgnore]
-        public object ObjLock { get; set; } = new();
-
-        [Newtonsoft.Json.JsonIgnore]
-        public Task FileCopyTask { get; set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-        public FileStream DataFileStream { get; set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-        public DateTime LastUpDateTime { get; set; } = DateTime.Now;
-
-        [Newtonsoft.Json.JsonIgnore]
-        public FasterKV<MyKey, BlockMetadata> Store { get; set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-        public ClientSession<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty, IFunctions<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty>> KvSession { get; set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-        public IDevice Objlog { get; set; }
-
-        [Newtonsoft.Json.JsonIgnore]
-        public IDevice Log { get; set; }
-
-
-        [Newtonsoft.Json.JsonIgnore]
-        public Merger.Merger Merger;
-
-      
 
         ~CowSession()
         {
-
             DataFileStream.Dispose();
-            
+
             Store.TakeFullCheckpointAsync(CheckpointType.FoldOver).GetAwaiter().GetResult();
             KvSession.Dispose();
             Store.Dispose();
@@ -79,19 +71,28 @@ namespace cow_merger_service
             Objlog.Dispose();
         }
     }
+
     public class JsonToFile
     {
-
         /// <summary>
-        /// Writes the given object instance to a Json file.
-        /// <para>Object type must have a parameterless constructor.</para>
-        /// <para>Only Public properties and variables will be written to the file. These can be any type though, even other classes.</para>
-        /// <para>If there are public properties/variables that you do not want written to the file, decorate them with the [JsonIgnore] attribute.</para>
+        ///     Writes the given object instance to a Json file.
+        ///     <para>Object type must have a parameterless constructor.</para>
+        ///     <para>
+        ///         Only Public properties and variables will be written to the file. These can be any type though, even other
+        ///         classes.
+        ///     </para>
+        ///     <para>
+        ///         If there are public properties/variables that you do not want written to the file, decorate them with the
+        ///         [JsonIgnore] attribute.
+        ///     </para>
         /// </summary>
         /// <typeparam name="T">The type of object being written to the file.</typeparam>
         /// <param name="filePath">The file path to write the object instance to.</param>
         /// <param name="objectToWrite">The object instance to write to the file.</param>
-        /// <param name="append">If false the file will be overwritten if it already exists. If true the contents will be appended to the file.</param>
+        /// <param name="append">
+        ///     If false the file will be overwritten if it already exists. If true the contents will be appended
+        ///     to the file.
+        /// </param>
         public static void WriteToJsonFile<T>(string filePath, T objectToWrite, bool append = false) where T : new()
         {
             TextWriter writer = null;
@@ -109,8 +110,8 @@ namespace cow_merger_service
         }
 
         /// <summary>
-        /// Reads an object instance from an Json file.
-        /// <para>Object type must have a parameterless constructor.</para>
+        ///     Reads an object instance from an Json file.
+        ///     <para>Object type must have a parameterless constructor.</para>
         /// </summary>
         /// <typeparam name="T">The type of object to read from the file.</typeparam>
         /// <param name="filePath">The file path to read the object instance from.</param>
@@ -129,7 +130,5 @@ namespace cow_merger_service
                 reader?.Close();
             }
         }
-
-
     }
 }
