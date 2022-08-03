@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
+using System.Threading.Tasks;
 using cow_merger_service.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -38,8 +40,16 @@ namespace cow_merger_service.Controllers
 
         [HttpPost]
         [Consumes("application/octet-stream")]
-        public ActionResult Update([Required, FromQuery] Guid guid, [Required, FromQuery] int blockNumber, [Required, FromBody] byte[] data)
+        public async Task<ActionResult> Update([Required, FromQuery] Guid guid, [Required, FromQuery] int blockNumber)//, [Required, FromBody] byte[] data)
         {
+
+       
+            byte[] data;
+            using (var ms = new MemoryStream(2048))
+            {
+                 await Request.Body.CopyToAsync(ms);
+                 data = ms.ToArray();
+            }
             try
             {
                 if (_sessionManager.Update(guid, blockNumber, data.AsSpan()))

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,14 +25,6 @@ namespace cow_merger_service
         private bool CheckConfiguration()
         {
             bool isOk = true;
-            DirectoryInfo d = Directory.CreateDirectory("test");
-            Console.WriteLine(d.FullName);
-            _logger.Log(LogLevel.Information,
-                $"workingDirectory: {Path.GetFullPath(Configuration["Settings:WorkingDirectory"])}");
-            _logger.Log(LogLevel.Information,
-                $"originalImageDirectory: {Path.GetFullPath(Configuration["Settings:OriginalImageDirectory"])}");
-            _logger.Log(LogLevel.Information,
-                $"destinationDirectory: {Path.GetFullPath(Configuration["Settings:DestinationDirectory"])}");
             if (!Directory.Exists(Configuration["Settings:WorkingDirectory"]))
             {
                 _logger.Log(LogLevel.Critical, "WorkingDirectory does not exists, bye!");
@@ -49,7 +42,12 @@ namespace cow_merger_service
                 _logger.Log(LogLevel.Critical, "DestinationDirectory does not exists, bye!");
                 isOk = false;
             }
-
+            _logger.Log(LogLevel.Information,
+                $"workingDirectory: {Path.GetFullPath(Configuration["Settings:WorkingDirectory"])}");
+            _logger.Log(LogLevel.Information,
+                $"originalImageDirectory: {Path.GetFullPath(Configuration["Settings:OriginalImageDirectory"])}");
+            _logger.Log(LogLevel.Information,
+                $"destinationDirectory: {Path.GetFullPath(Configuration["Settings:DestinationDirectory"])}");
             return isOk;
         }
 
@@ -58,7 +56,10 @@ namespace cow_merger_service
         {
             services.AddSingleton<SessionManager>();
 
-            services.AddControllers(options => { options.InputFormatters.Insert(0, new RawRequestBodyFormatter()); })
+            services.AddControllers(options =>
+                {
+                    //options.InputFormatters.Insert(0, new RawRequestBodyFormatter());
+                })
                 .AddJsonOptions(options => { options.JsonSerializerOptions.IncludeFields = true; });
             ;
 
@@ -73,6 +74,7 @@ namespace cow_merger_service
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime,
             ILogger<Startup> logger)
         {
+        
             _logger = logger;
             if (env.IsDevelopment())
             {
@@ -88,6 +90,7 @@ namespace cow_merger_service
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+
 
             if (!CheckConfiguration()) lifeTime.StopApplication();
         }

@@ -115,11 +115,11 @@ namespace cow_merger_service
                 if (session == null) throw new KeyNotFoundException();
             }
 
+            
+            Span<byte> bitfield = spanData.Slice(0, session.BitfieldSize);
+            Span<byte> data = spanData.Slice(session.BitfieldSize);
             lock (session.ObjLock)
             {
-                Span<byte> bitfield = spanData.Slice(0, session.BitfieldSize);
-                Span<byte> data = spanData.Slice(session.BitfieldSize);
-
                 return UpdateBlock(session, blockNumber, bitfield, data);
             }
         }

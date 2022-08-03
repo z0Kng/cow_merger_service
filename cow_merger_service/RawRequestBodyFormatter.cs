@@ -62,7 +62,7 @@ namespace cow_merger_service
 
             if (contentType == "application/octet-stream")
                 using (MemoryStream ms = new MemoryStream(2048))
-                {
+                {   
                     await request.Body.CopyToAsync(ms);
                     byte[] content = ms.ToArray();
                     return await InputFormatterResult.SuccessAsync(content);
