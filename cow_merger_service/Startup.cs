@@ -27,7 +27,7 @@ namespace cow_merger_service
             bool isOk = true;
             if (!Directory.Exists(Configuration["Settings:WorkingDirectory"]))
             {
-                _logger.Log(LogLevel.Critical, $"WorkingDirectory:{Environment.NewLine}{Configuration["Settings: WorkingDirectory"]}{Environment.NewLine} does not exists, bye!");
+                _logger.Log(LogLevel.Critical, $"WorkingDirectory:{Environment.NewLine}{Configuration["Settings:WorkingDirectory"]}{Environment.NewLine} does not exists, bye!");
                 isOk = false;
             }
 
@@ -41,6 +41,11 @@ namespace cow_merger_service
             {
                 _logger.Log(LogLevel.Critical, $"DestinationDirectory:{Environment.NewLine}{Configuration["Settings:DestinationDirectory"]}{Environment.NewLine} does not exists, bye!");
                 isOk = false;
+            }
+
+            if (!isOk)
+            {
+                return isOk;
             }
             _logger.Log(LogLevel.Information,
                 $"workingDirectory: {Path.GetFullPath(Configuration["Settings:WorkingDirectory"])}");
