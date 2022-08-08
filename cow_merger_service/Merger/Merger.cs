@@ -73,7 +73,6 @@ namespace cow_merger_service.Merger
                     while (iterator.GetNext(out _))
                     {
                         BlockMetadata metaData = iterator.GetValue();
-                        Console.WriteLine($"mergingBlock {metaData.Number}");
                         for (int i = 0; i < metaData.Bitfield.Length * 8; i++)
                             // TODO also check if more optimized seeking in diff is possible
 
