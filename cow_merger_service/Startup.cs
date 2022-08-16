@@ -62,7 +62,8 @@ namespace cow_merger_service
             services.AddSingleton<SessionManager>();
 
             services.AddControllers(options =>
-                {
+                {   
+                    // removed since it seems to be slow somehow
                     //options.InputFormatters.Insert(0, new RawRequestBodyFormatter());
                 })
                 .AddJsonOptions(options => { options.JsonSerializerOptions.IncludeFields = true; });
