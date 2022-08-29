@@ -10,7 +10,6 @@
 
 #### Windows
   Install the dotnet sdk from: https://dotnet.microsoft.com/en-us/download/visual-studio-sdks.  
-  This server hast been developed with net 5.0 but should also work with 6.0.
   
   If you have Visual Stuido installed, just open the `cow_merger_service.sln`, the rest should be self explanatory.
   
@@ -38,10 +37,9 @@
     sudo apt-get update; \
     sudo apt-get install -y apt-transport-https && \
     sudo apt-get update && \
-    sudo apt-get install -y dotnet-sdk-5.0
+    sudo apt-get install -y dotnet-sdk-6.0
     ```
 
-    This server hast been developed with net 5.0 but should also work with 6.0.
 
     For other distributions or more information, see https://docs.microsoft.com/en-us/dotnet/core/install/linux.
 
