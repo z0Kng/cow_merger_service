@@ -70,6 +70,17 @@ namespace cow_merger_service
             return session.Id;
         }
 
+        private static void WriteSparse(CowSession session, in BlockMetadata metaData, Span<byte> spanData) {
+            for (int i = 0; i < metaData.Bitfield.Length * 8; i++) {
+                if (ByteArrayHelper.checkBit(metaData.Bitfield, i)) {
+                    long diffOffset = metaData.Offset + i * 4096;
+
+                    session.DataFileStream.Seek(diffOffset, SeekOrigin.Begin);
+                    session.DataFileStream.Write(spanData.Slice(i*4096,4096));
+                }
+            }
+            session.DataFileStream.SetLength(metaData.Offset+session.BitfieldSize*4096);
+        }
 
         private bool UpdateBlock(CowSession session, int blockNumber, Span<byte> bitfield, Span<byte> spanData)
         {
@@ -87,7 +98,7 @@ namespace cow_merger_service
                 metadata.ModifyCount = 0;
             }
 
-            metadata.Bitfield = bitfield.ToArray();
+            ByteArrayHelper.Or(ref metadata.Bitfield, bitfield.ToArray());
             metadata.ModifyCount++;
             Status res = session.KvSession.Upsert(key, metadata);
 
@@ -98,9 +109,12 @@ namespace cow_merger_service
                 Console.WriteLine("ERROR");
                 return false;
             }
-
-            session.DataFileStream.Seek(metadata.Offset, SeekOrigin.Begin);
-            session.DataFileStream.Write(spanData);
+            if(spanData.Length < session.BitfieldSize*4096) {
+                WriteSparse(session,in metadata,spanData);
+            } else {
+                session.DataFileStream.Seek(metadata.Offset, SeekOrigin.Begin);
+                session.DataFileStream.Write(spanData);
+            }
             session.LastUpDateTime = DateTime.Now;
 
 
@@ -162,8 +176,8 @@ namespace cow_merger_service
                 ImageName = session.ImageName,
                 OriginalImageVersion = session.ImageVersion,
                 NewImageVersion = -1, //TODO
-                MergedBlocks = session.MergedBlocks,
-                TotalBlocks = session.TotalBlocks
+                MergedClusters = session.MergedBlocks,
+                TotalClusters = session.TotalBlocks
             };
         }
 
@@ -284,7 +298,7 @@ namespace cow_merger_service
                 BlockMetadata b = iterator.GetValue();
                 BlockStatistics blockStatistics = new()
                 {
-                    BlockNumber = b.Number,
+                    ClusterNumber = b.Number,
                     Modifications = b.ModifyCount
                 };
                 blockStatisticsList.Add(blockStatistics);

@@ -6,7 +6,7 @@ namespace cow_merger_service.Models
     {
         [Required] public string ImageName { get; set; }
 
-        [Required] public int MergedBlocks { get; set; }
+        [Required] public int MergedClusters { get; set; }
 
         [Required] public int NewImageVersion { get; set; } = -1;
 
@@ -14,6 +14,6 @@ namespace cow_merger_service.Models
 
         [Required] public SessionState State { get; set; }
 
-        [Required] public int TotalBlocks { get; set; }
+        [Required] public int TotalClusters { get; set; }
     }
 }

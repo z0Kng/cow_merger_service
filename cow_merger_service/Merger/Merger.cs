@@ -28,30 +28,6 @@ namespace cow_merger_service.Merger
             _logger = loggerFactory.CreateLogger<Merger>();
         }
 
-        private bool checkBit(Span<byte> bitfield, int n)
-        {
-            return ((bitfield[n / 8] >> (n % 8)) & 1) > 0;
-        }
-
-        private string PrintB(IReadOnlyList<bool> a)
-        {
-            char[] buf = new char[a.Count];
-
-            for (int i = 0; i < a.Count; i++)
-                if (a[i])
-                    buf[i] = '1';
-                else
-                    buf[i] = '0';
-
-            return new string(buf);
-        }
-
-        public static string ByteArrayToString(byte[] a)
-        {
-            return string.Join(" ", a.Select(x => Convert.ToString(x, 2).PadLeft(8, '0')));
-        }
-
-
         public bool Merge(
             ClientSession<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty,
                 IFunctions<MyKey, BlockMetadata, BlockMetadata, BlockMetadata, Empty>> session, long originalFileSize,
@@ -76,7 +52,7 @@ namespace cow_merger_service.Merger
                         for (int i = 0; i < metaData.Bitfield.Length * 8; i++)
                             // TODO also check if more optimized seeking in diff is possible
 
-                            if (checkBit(metaData.Bitfield, i))
+                            if (ByteArrayHelper.checkBit(metaData.Bitfield, i))
                             {
                                 long diffOffset = metaData.Offset + i * 4096;
                                 long fileOffset = metaData.Number * 4096 * _bitFieldSize * 8 + i * 4096;

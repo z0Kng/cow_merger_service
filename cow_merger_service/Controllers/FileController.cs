@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace cow_merger_service.Controllers
 {
     [ApiController]
-    [Route("api/[controller]/[action]")]
+    [Route("v1/[controller]/[action]")]
     public class FileController : Controller
     {
         private SessionManager _sessionManager;
@@ -40,7 +40,7 @@ namespace cow_merger_service.Controllers
 
         [HttpPost]
         [Consumes("application/octet-stream")]
-        public async Task<ActionResult> Update([Required, FromQuery] Guid guid, [Required, FromQuery] int blockNumber)//, [Required, FromBody] byte[] data)
+        public async Task<ActionResult> Update([Required, FromQuery] Guid uuid, [Required, FromQuery] int clusterNumber)//, [Required, FromBody] byte[] data)
         {
 
        
@@ -52,7 +52,7 @@ namespace cow_merger_service.Controllers
             }
             try
             {
-                if (_sessionManager.Update(guid, blockNumber, data.AsSpan()))
+                if (_sessionManager.Update(uuid, clusterNumber, data.AsSpan()))
                 {
                     return Ok();
                 }
@@ -68,11 +68,11 @@ namespace cow_merger_service.Controllers
         }
 
         [HttpPost]
-        public ActionResult StartMerge([Required, FromForm] Guid guid, [Required, FromForm] long originalFileSize,  [Required, FromForm] long newFileSize)
+        public ActionResult Merge([Required, FromForm] Guid uuid, [Required, FromForm] long originalFileSize,  [Required, FromForm] long newFileSize)
         {
             try
             {
-                return Ok(_sessionManager.StartMerge(guid, originalFileSize, newFileSize));
+                return Ok(_sessionManager.StartMerge(uuid, originalFileSize, newFileSize));
             }
             catch (KeyNotFoundException)
             {
@@ -86,10 +86,10 @@ namespace cow_merger_service.Controllers
 
         [HttpGet]
         [Produces("application/json")]
-        public ActionResult<List<BlockStatistics>> GetTopModifiedBlocks([Required] Guid guid, [Required] int amount)
+        public ActionResult<List<BlockStatistics>> GetTopModifiedBlocks([Required] Guid uuid, [Required] int amount)
         {
             try {
-                return Ok(_sessionManager.GetTopModifiedBlocks(guid, amount));
+                return Ok(_sessionManager.GetTopModifiedBlocks(uuid, amount));
             }
             catch (KeyNotFoundException)
             {
@@ -98,11 +98,11 @@ namespace cow_merger_service.Controllers
         }
 
         [HttpGet]
-        public ActionResult<SessionStatus> Status([Required] Guid guid)
+        public ActionResult<SessionStatus> Status([Required] Guid uuid)
         {
             try
             {
-                return Ok(_sessionManager.Status(guid));
+                return Ok(_sessionManager.Status(uuid));
             }
             catch (KeyNotFoundException)
             {

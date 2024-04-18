@@ -27,19 +27,19 @@ namespace cow_merger_service
             bool isOk = true;
             if (!Directory.Exists(Configuration["Settings:WorkingDirectory"]))
             {
-                _logger.Log(LogLevel.Critical, $"WorkingDirectory:{Environment.NewLine}{Configuration["Settings:WorkingDirectory"]}{Environment.NewLine} does not exists, bye!");
+                _logger.Log(LogLevel.Critical, $"WorkingDirectory:{Environment.NewLine}{Path.GetFullPath(Configuration["Settings:WorkingDirectory"])}{Environment.NewLine} does not exists, bye!");
                 isOk = false;
             }
 
             if (!Directory.Exists(Configuration["Settings:OriginalImageDirectory"]))
             {
-                _logger.Log(LogLevel.Critical, $"OriginalImageDirectory:{Environment.NewLine}{Configuration["Settings:OriginalImageDirectory"]}{Environment.NewLine} does not exists, bye!");
+                _logger.Log(LogLevel.Critical, $"OriginalImageDirectory:{Environment.NewLine}{Path.GetFullPath(Configuration["Settings:OriginalImageDirectory"])}{Environment.NewLine} does not exists, bye!");
                 isOk = false;
             }
 
             if (!Directory.Exists(Configuration["Settings:DestinationDirectory"]))
             {
-                _logger.Log(LogLevel.Critical, $"DestinationDirectory:{Environment.NewLine}{Configuration["Settings:DestinationDirectory"]}{Environment.NewLine} does not exists, bye!");
+                _logger.Log(LogLevel.Critical, $"DestinationDirectory:{Environment.NewLine}{Path.GetFullPath(Configuration["Settings:DestinationDirectory"])}{Environment.NewLine} does not exists, bye!");
                 isOk = false;
             }
 
@@ -74,6 +74,7 @@ namespace cow_merger_service
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "cow_merger_service", Version = "v1" });
             });
+            services.AddRouting(options => options.LowercaseUrls = true);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
