@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Primitives;
 
 namespace cow_merger_service
 {
@@ -97,7 +99,27 @@ namespace cow_merger_service
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.Use(async (context, next) =>
+            {
+                await next();
+                if (context.Response.StatusCode == 404)
+                {
+                    
+                    string error = $"404: {context.Request.Path}";
 
+                    if(context.Request.Method == "POST") {
+                        IFormCollection form;
+                        form = await context.Request.ReadFormAsync();
+
+                        foreach (KeyValuePair<String,StringValues> kvp in form){
+                             error += $"{Environment.NewLine}    {kvp.Key}: {kvp.Value}";
+                        }
+                        
+                    }
+                    _logger.Log(LogLevel.Warning, error);
+                    await next();
+                }
+            });
 
             if (!CheckConfiguration()) lifeTime.StopApplication();
         }
