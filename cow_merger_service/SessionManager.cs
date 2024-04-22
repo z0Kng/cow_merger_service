@@ -56,7 +56,10 @@ namespace cow_merger_service
 
             string originalImagePath =
                 Path.Combine(_originalImageDirectory, session.ImageName + ".r" + session.ImageVersion);
-            if (!File.Exists(originalImagePath)) throw new ImageNotFound();
+            if (!File.Exists(originalImagePath)) {
+                _logger.Log(LogLevel.Warning,$"Image not found: {originalImagePath}");
+                throw new ImageNotFound();
+            }
 
             session.FileCopyTask = CopyImage(session);
 
@@ -65,7 +68,10 @@ namespace cow_merger_service
 
             session.DataFileStream =
                 File.Create(Path.Combine(path, Path.GetFileName(Path.Combine(_workingDirectory, "data"))));
-            if (!_fileSessions.TryAdd(session.Id, session)) throw new InvalidOperationException();
+            if (!_fileSessions.TryAdd(session.Id, session)) {
+                _logger.Log(LogLevel.Error,$"Could not add session");
+                throw new InvalidOperationException();
+                }
 
             return session.Id;
         }
