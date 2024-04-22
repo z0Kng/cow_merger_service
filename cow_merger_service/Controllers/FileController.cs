@@ -40,7 +40,7 @@ namespace cow_merger_service.Controllers
 
         [HttpPost]
         [Consumes("application/octet-stream")]
-        public async Task<ActionResult> Update([Required, FromQuery] Guid uuid, [Required, FromQuery] int clusterNumber)//, [Required, FromBody] byte[] data)
+        public async Task<ActionResult> Update([Required, FromQuery] Guid uuid, [Required, FromQuery] int clusterindex)//, [Required, FromBody] byte[] data)
         {
 
        
@@ -52,7 +52,7 @@ namespace cow_merger_service.Controllers
             }
             try
             {
-                if (_sessionManager.Update(uuid, clusterNumber, data.AsSpan()))
+                if (_sessionManager.Update(uuid, clusterindex, data.AsSpan()))
                 {
                     return Ok();
                 }
