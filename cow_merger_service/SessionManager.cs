@@ -77,12 +77,13 @@ namespace cow_merger_service
         }
 
         private static void WriteSparse(CowSession session, in BlockMetadata metaData, Span<byte> spanData) {
+            int spanDataBlockIndex = 0;
             for (int i = 0; i < metaData.Bitfield.Length * 8; i++) {
                 if (ByteArrayHelper.checkBit(metaData.Bitfield, i)) {
                     long diffOffset = metaData.Offset + i * 4096;
-
                     session.DataFileStream.Seek(diffOffset, SeekOrigin.Begin);
-                    session.DataFileStream.Write(spanData.Slice(i*4096,4096));
+                    session.DataFileStream.Write(spanData.Slice(spanDataBlockIndex*4096,4096));
+                    spanDataBlockIndex++;
                 }
             }
             session.DataFileStream.SetLength(metaData.Offset+session.BitfieldSize*4096);
