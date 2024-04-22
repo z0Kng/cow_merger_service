@@ -102,6 +102,7 @@ namespace cow_merger_service
                 metadata.Offset = session.DataFileStream.Length;
                 session.TotalBlocks++;
                 metadata.ModifyCount = 0;
+                metadata.Bitfield = new byte[session.BitfieldSize];
             }
 
             ByteArrayHelper.Or(ref metadata.Bitfield, bitfield.ToArray());
