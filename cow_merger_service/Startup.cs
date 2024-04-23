@@ -90,6 +90,26 @@ namespace cow_merger_service
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "cow_merger_service v1"));
+                app.Use(async (context, next) =>
+                {
+                    await next();
+                    if (context.Response.StatusCode == 404)
+                    {
+                    
+                        string error = $"404: {context.Request.Path}";
+
+                        if(context.Request.Method == "POST") {
+                            IFormCollection form;
+                            form = await context.Request.ReadFormAsync();
+
+                            foreach (KeyValuePair<String,StringValues> kvp in form){
+                                error += $"{Environment.NewLine}    {kvp.Key}: {kvp.Value}";
+                            }
+                        }
+                        _logger.Log(LogLevel.Warning, error);
+                        await next();
+                    }
+                });
             }
 
             app.UseHttpsRedirection();
@@ -99,27 +119,6 @@ namespace cow_merger_service
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-            app.Use(async (context, next) =>
-            {
-                await next();
-                if (context.Response.StatusCode == 404)
-                {
-                    
-                    string error = $"404: {context.Request.Path}";
-
-                    if(context.Request.Method == "POST") {
-                        IFormCollection form;
-                        form = await context.Request.ReadFormAsync();
-
-                        foreach (KeyValuePair<String,StringValues> kvp in form){
-                             error += $"{Environment.NewLine}    {kvp.Key}: {kvp.Value}";
-                        }
-                        
-                    }
-                    _logger.Log(LogLevel.Warning, error);
-                    await next();
-                }
-            });
 
             if (!CheckConfiguration()) lifeTime.StopApplication();
         }

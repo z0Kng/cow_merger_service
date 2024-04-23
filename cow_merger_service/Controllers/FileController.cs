@@ -22,11 +22,11 @@ namespace cow_merger_service.Controllers
         }
 
         [HttpPost]
-        public ActionResult<Guid> Create([Required, FromForm] int version, [Required, FromForm] int bitfieldSize, [Required, FromForm] string imageName)
+        public ActionResult<Guid> Create([Required, FromForm] int revision, [Required, FromForm] int bitfieldSize, [Required, FromForm] string imageName)
         {
             try
             {
-                return Ok(_sessionManager.Create(imageName, version, bitfieldSize).ToString());
+                return Ok(_sessionManager.Create(imageName, revision, bitfieldSize).ToString());
             }
             catch (ImageNotFound)
             {
