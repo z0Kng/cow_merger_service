@@ -69,7 +69,7 @@ namespace cow_merger_service
                     //options.InputFormatters.Insert(0, new RawRequestBodyFormatter());
                 })
                 .AddJsonOptions(options => { options.JsonSerializerOptions.IncludeFields = true; });
-            ;
+            
 
 
             services.AddSwaggerGen(c =>

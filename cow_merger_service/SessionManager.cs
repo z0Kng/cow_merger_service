@@ -105,6 +105,8 @@ namespace cow_merger_service
                 metadata.ModifyCount = 0;
                 metadata.Bitfield = new byte[session.BitfieldSize];
             }
+            
+            _logger.Log(LogLevel.Debug, "UPDATE{}: {}",result.NotFound? "(new)":"",blockNumber);
 
             ByteArrayHelper.Or(ref metadata.Bitfield, bitfield.ToArray());
             metadata.ModifyCount++;
@@ -114,7 +116,7 @@ namespace cow_merger_service
 
             if (!res.IsCompletedSuccessfully)
             {
-                Console.WriteLine("ERROR");
+                _logger.Log(LogLevel.Error, $"Failed to update Metadata in db for block {metadata.Number}");
                 return false;
             }
             if(spanData.Length < session.BitfieldSize*4096) {
@@ -124,8 +126,6 @@ namespace cow_merger_service
                 session.DataFileStream.Write(spanData);
             }
             session.LastUpDateTime = DateTime.Now;
-
-
             return true;
         }
 
