@@ -121,7 +121,7 @@ namespace cow_merger_service
                 _logger.Log(LogLevel.Error, $"Failed to update Metadata in db for block {metadata.Number}");
                 return false;
             }
-            if(spanData.Length < session.BitfieldSize*4096) {
+            if(spanData.Length < session.BitfieldSize * 4096 *8) {
                 WriteSparse(session,in metadata,spanData);
             } else {
                 session.DataFileStream.Seek(metadata.Offset, SeekOrigin.Begin);
