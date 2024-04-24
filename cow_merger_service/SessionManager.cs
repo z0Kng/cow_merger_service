@@ -86,7 +86,9 @@ namespace cow_merger_service
                     spanDataBlockIndex++;
                 }
             }
-            session.DataFileStream.SetLength(metaData.Offset+session.BitfieldSize*8*4096);
+            if(session.DataFileStream.Length < metaData.Offset+session.BitfieldSize*8*4096) {
+                session.DataFileStream.SetLength(metaData.Offset+session.BitfieldSize*8*4096);
+            }
         }
 
         private bool UpdateBlock(CowSession session, int blockNumber, Span<byte> bitfield, Span<byte> spanData)
